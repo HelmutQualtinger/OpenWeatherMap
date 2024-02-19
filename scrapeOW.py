@@ -144,13 +144,15 @@ def fetch_and_save_weather_data():
                         weather_desc, wind_speed, wind_direction, rain_down_1h, clouds,
                         country, canton, dt, sunrise, sunset, tz))
         db.commit()
+        time.sleep(1)
 
         # Close the database connection
     cursor.close()
     db.close()
 
+fetch_and_save_weather_data()
 # Schedule the fetch_and_save_weather_data function to run every hour
-schedule.every(10).minutes.do(fetch_and_save_weather_data)
+schedule.every(30).minutes.do(fetch_and_save_weather_data)
 
 fetch_and_save_weather_data()
     # Keep the script running indefinitely
