@@ -1,0 +1,5 @@
+API_KEY = "xxxxxx"
+DB_HOST = "domain.com"
+DB_USER = "username"
+DB_PASSWORD = "password"
+DB_NAME = "OpenWeatherMap"

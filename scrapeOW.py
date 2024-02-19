@@ -1,27 +1,20 @@
+# pylint: disable=import-error
 
 """
 Dieses Modul ruft Wetterdaten von der OpenWeatherMap-API ab und speichert sie in einer MySQL-Datenbank.
 """
-
 import time
-import json
 import requests
+import json
 import mysql.connector
 import schedule
-
+import datetime
+from credentials import API_KEY, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
+import schweiz
 # 
 
-
-# Read the credentials from the secret JSON file
-with open('secret.json') as file:
-    credentials = json.load(file)
-
 # Extract the API key and database credentials from the JSON object
-API_KEY = credentials['api_key']
-DB_HOST = credentials['db_host']
-DB_USER = credentials['db_user']
-DB_PASSWORD = credentials['db_password']
-DB_NAME = credentials['db_name']
+
 def fetch_and_save_weather_data():
     """
     Ruft Wetterdaten von der OpenWeatherMap-API ab und speichert sie in einer MySQL-Datenbank.
@@ -32,58 +25,135 @@ def fetch_and_save_weather_data():
     Returns:
         None
     """
-    # Specify the city for which you want to fetch weather data
-    city = "London"
-
-    # Query the OpenWeatherMap API
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}"
-    response = requests.get(url)
-    data = response.json()
-
-    # Extract the required measurements from the API response
-    temperature = data["main"]["temp"]
-    humidity = data["main"]["humidity"]
-    pressure = data["main"]["pressure"]
-
-    # Connect to the MySQL database
     db = mysql.connector.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME
-    )
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME
+        )
     cursor = db.cursor()
 
-    # Create the weather_data table if it does not exist
+        # Create the weather_data table if it does not exist
     create_table_query = """
-        CREATE TABLE IF NOT EXISTS weather_data (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            city VARCHAR(255),
-            temperature FLOAT,
-            humidity INT,
-            pressure INT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_timestamp (timestamp)
-        )
-    """
-    cursor.execute(create_table_query)
+            CREATE TABLE IF NOT EXISTS weather_data (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                city VARCHAR(40),
+                lon FLOAT,
+                lat FLOAT,
+                weather_main VARCHAR(25),
+                weather_desc VARCHAR(25),
+                temperature FLOAT,
+                temperature_min FLOAT,
+                temperature_max FLOAT,
+                temperature_feels_like FLOAT,
+                humidity FLOAT,
+                pressure FLOAT,
+                wind_speed FLOAT,
+                wind_direction FLOAT,
+                rain_down_1h FLOAT,
+                clouds FLOAT,
+                country VARCHAR(25),
+                canton VARCHAR(25),
+                dt TIMESTAMP,
+                sunrise TIMESTAMP,
+                sunset TIMESTAMP,
+                tz float,
+                time_inserted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_timestamp (time_inserted),
+                index idx_city (city),
+                index idx_canton (canton),
+                index idx_country (country),
+                index idx_dt (dt)
+            )
+        """
+    returnv = cursor.execute(create_table_query)
 
-    # Insert the weather data into the database
-    insert_data_query = """
-        INSERT INTO weather_data (city, temperature, humidity, pressure)
-        VALUES (%s, %s, %s, %s)
-    """
-    cursor.execute(insert_data_query, (city, temperature, humidity, pressure))
-    db.commit()
+    # Query the OpenWeatherMap API
+    for (city,canton) in schweiz.orte:
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&lang=de&appid={API_KEY}"
+        response = requests.get(url)
+        data = response.json()
+        # Dump the API response to a JSON file
+        with open('response.json', 'w', encoding='utf-8') as file:
+            json.dump(data, file)
+        # Extract the required measurements from the API response
+        lon= data["coord"]["lon"]
+        lat= data["coord"]["lat"]
+        weather_main = data["weather"][0]["description"]
+        weather_desc = data["weather"][0]["main"]
+        temperature = data["main"]["temp"] -273.15
+        temperature_min = data["main"]["temp_min"] -273.15
+        temperature_max = data["main"]["temp_max"] -273.15
+        temperature_feels_like = data["main"]["feels_like"] -273.15
+        humidity = data["main"]["humidity"]
+        pressure = data["main"]["pressure"]
+        wind_speed = data["wind"]["speed"]
+        wind_direction = data["wind"]["deg"]
+        try:
+            rain_down_1h = data["rain"]["1h"]
+        except KeyError:
+            rain_down_1h = 0
+        dt= data["dt"]
+        clouds = data["clouds"]["all"]
+        country = data["sys"]["country"]
+        sunrise = data["sys"]["sunrise"]
+        sunset = data["sys"]["sunset"]
+        
+        country = data["sys"]["country"]
+        city = data["name"]
+        tz = data["timezone"]
+        # Convert unix timestamps to SQL timestamps
+        sunrise = datetime.datetime.fromtimestamp(sunrise).strftime('%Y-%m-%d %H:%M:%S')
+        sunset = datetime.datetime.fromtimestamp(sunset).strftime('%Y-%m-%d %H:%M:%S')
+        dt = datetime.datetime.fromtimestamp(dt).strftime('%Y-%m-%d %H:%M:%S')
+        # Connect to the MySQL database
+        
 
-    # Close the database connection
+        # Insert the weather data into the database
+        insert_data_query = """
+            INSERT INTO weather_data (
+                city, 
+                temperature, 
+                temperature_min, 
+                temperature_max, 
+                temperature_feels_like, 
+                humidity, 
+                pressure, 
+                lon, 
+                lat, 
+                weather_main, 
+                weather_desc, 
+                wind_speed, 
+                wind_direction, 
+                rain_down_1h, 
+                clouds, 
+                country,
+                canton, 
+                dt,
+                sunrise,
+                sunset,
+                tz)
+            VALUES (%s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, 
+                    %s, %s, %s, %s, %s, %s)  
+        """
+        cursor.execute(insert_data_query, 
+                    (city, temperature, temperature_min, temperature_max, temperature_feels_like,
+                        humidity, pressure, lon, lat, weather_main, 
+                        weather_desc, wind_speed, wind_direction, rain_down_1h, clouds,
+                        country, canton, dt, sunrise, sunset, tz))
+        db.commit()
+
+        # Close the database connection
     cursor.close()
     db.close()
 
-# Schedule the execution of the fetch_and_save_weather_data function every hour
-schedule.every().hour.do(fetch_and_save_weather_data)
+# Schedule the fetch_and_save_weather_data function to run every hour
+schedule.every(10).minutes.do(fetch_and_save_weather_data)
 
-# Run the scheduled tasks indefinitely
+fetch_and_save_weather_data()
+    # Keep the script running indefinitely
 while True:
     schedule.run_pending()
     time.sleep(1)
