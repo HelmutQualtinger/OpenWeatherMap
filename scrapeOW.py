@@ -11,6 +11,7 @@ import schedule
 import datetime
 from credentials import API_KEY, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 import schweiz
+import deutschland
 # 
 
 # Extract the API key and database credentials from the JSON object
@@ -69,7 +70,8 @@ def fetch_and_save_weather_data():
     returnv = cursor.execute(create_table_query)
 
     # Query the OpenWeatherMap API
-    for (city,canton) in schweiz.orte:
+    
+    for (city,canton) in deutschland.orte + schweiz.orte:
         url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&lang=de&appid={API_KEY}"
         response = requests.get(url)
         data = response.json()
@@ -152,10 +154,7 @@ def fetch_and_save_weather_data():
 
 fetch_and_save_weather_data()
 # Schedule the fetch_and_save_weather_data function to run every hour
-schedule.every(30).minutes.do(fetch_and_save_weather_data)
-
-fetch_and_save_weather_data()
-    # Keep the script running indefinitely
+schedule.every(28).minutes.do(fetch_and_save_weather_data)
 while True:
     schedule.run_pending()
     time.sleep(1)

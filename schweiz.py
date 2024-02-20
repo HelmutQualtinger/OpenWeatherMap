@@ -1,4 +1,7 @@
 orte = [
+    ('Flums', 'Königreich der Bösch'),
+    ('Simplon', 'Kaiserreich der Simpler'),
+    ('Vatikanstadt', 'Schweizer Garde'),
     ("Zürich", "Zürich"),
     ("Genf", "Genf"),
     ("Basel", "Basel-Stadt"),
