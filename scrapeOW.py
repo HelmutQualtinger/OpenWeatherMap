@@ -1,4 +1,3 @@
-# pylint: disable=import-error
 
 """
 Dieses Modul ruft Wetterdaten von der OpenWeatherMap-API ab und speichert sie in einer MySQL-Datenbank.
@@ -12,6 +11,7 @@ import datetime
 from credentials import API_KEY, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 import schweiz
 import deutschland
+import italia
 # 
 
 # Extract the API key and database credentials from the JSON object
@@ -71,10 +71,12 @@ def fetch_and_save_weather_data():
 
     # Query the OpenWeatherMap API
     
-    for (city,canton) in deutschland.orte + schweiz.orte:
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&lang=de&appid={API_KEY}"
+    for (city,canton,country) in deutschland.orte + schweiz.orte + italia.citta_italiane:
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city},{country}&lang=de&appid={API_KEY}"
+        print (url)
         response = requests.get(url)
         data = response.json()
+   #     print (response)
         # Dump the API response to a JSON file
         with open('response.json', 'w', encoding='utf-8') as file:
             json.dump(data, file)
@@ -110,7 +112,8 @@ def fetch_and_save_weather_data():
         dt = datetime.datetime.fromtimestamp(dt).strftime('%Y-%m-%d %H:%M:%S')
         # Connect to the MySQL database
         
-
+        # Truncate weather_main to 25 characters
+        weather_main = weather_main[:25]
         # Insert the weather data into the database
         insert_data_query = """
             INSERT INTO weather_data (
@@ -140,19 +143,25 @@ def fetch_and_save_weather_data():
                     %s, %s, %s, %s, %s, 
                     %s, %s, %s, %s, %s, %s)  
         """
+        # print (city, temperature, temperature_min, temperature_max, temperature_feels_like,
+        #                 humidity, pressure, lon, lat, "--",weather_main,"--", 
+        #                 weather_desc, wind_speed, wind_direction, rain_down_1h, clouds,
+        #                 country, canton, dt, sunrise, sunset, tz)
         cursor.execute(insert_data_query, 
                     (city, temperature, temperature_min, temperature_max, temperature_feels_like,
                         humidity, pressure, lon, lat, weather_main, 
                         weather_desc, wind_speed, wind_direction, rain_down_1h, clouds,
                         country, canton, dt, sunrise, sunset, tz))
         db.commit()
-        time.sleep(1)
+        time.sleep(0.1)
 
         # Close the database connection
+
     cursor.close()
     db.close()
 
 fetch_and_save_weather_data()
+
 # Schedule the fetch_and_save_weather_data function to run every hour
 schedule.every(28).minutes.do(fetch_and_save_weather_data)
 while True:
