@@ -12,10 +12,9 @@ from credentials import API_KEY, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 import schweiz
 import deutschland
 import italia
-# 
+
 
 # Extract the API key and database credentials from the JSON object
-
 def fetch_and_save_weather_data():
     """
     Ruft Wetterdaten von der OpenWeatherMap-API ab und speichert sie in einer MySQL-Datenbank.
