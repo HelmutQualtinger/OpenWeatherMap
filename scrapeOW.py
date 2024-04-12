@@ -12,6 +12,7 @@ from credentials import API_KEY, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 import schweiz
 import deutschland
 import italia
+import france
 
 
 # Extract the API key and database credentials from the JSON object
@@ -69,8 +70,9 @@ def fetch_and_save_weather_data():
     returnv = cursor.execute(create_table_query)
 
     # Query the OpenWeatherMap API
-    
-    for (city,canton,country) in deutschland.orte + schweiz.orte + italia.citta_italiane:
+    # 
+    for (city, canton, country) in deutschland.orte + \
+                            schweiz.orte + italia.citta_italiane + france.french_towns:
         url = f"http://api.openweathermap.org/data/2.5/weather?q={city},{country}&lang=de&appid={API_KEY}"
         print (url)
         response = requests.get(url)
@@ -103,7 +105,7 @@ def fetch_and_save_weather_data():
         sunset = data["sys"]["sunset"]
         
         country = data["sys"]["country"]
-        city = data["name"]
+        city = data["name"][:25] # use city name called for instead
         tz = data["timezone"]
         # Convert unix timestamps to SQL timestamps
         sunrise = datetime.datetime.fromtimestamp(sunrise).strftime('%Y-%m-%d %H:%M:%S')
@@ -146,13 +148,15 @@ def fetch_and_save_weather_data():
         #                 humidity, pressure, lon, lat, "--",weather_main,"--", 
         #                 weather_desc, wind_speed, wind_direction, rain_down_1h, clouds,
         #                 country, canton, dt, sunrise, sunset, tz)
+        if len(canton)>25:
+                canton = canton[:25]
         cursor.execute(insert_data_query, 
                     (city, temperature, temperature_min, temperature_max, temperature_feels_like,
                         humidity, pressure, lon, lat, weather_main, 
                         weather_desc, wind_speed, wind_direction, rain_down_1h, clouds,
                         country, canton, dt, sunrise, sunset, tz))
         db.commit()
-        time.sleep(0.1)
+        time.sleep(0.05)
 
         # Close the database connection
 
@@ -162,7 +166,13 @@ def fetch_and_save_weather_data():
 fetch_and_save_weather_data()
 
 # Schedule the fetch_and_save_weather_data function to run every hour
-schedule.every(28).minutes.do(fetch_and_save_weather_data)
+schedule.every().hour.at(":00").do(fetch_and_save_weather_data)
+schedule.every().hour.at(":10").do(fetch_and_save_weather_data)
+schedule.every().hour.at(":20").do(fetch_and_save_weather_data)
+schedule.every().hour.at(":30").do(fetch_and_save_weather_data)
+schedule.every().hour.at(":40").do(fetch_and_save_weather_data)
+schedule.every().hour.at(":50").do(fetch_and_save_weather_data)
+
 while True:
     schedule.run_pending()
-    time.sleep(1)
+    time.sleep(10)

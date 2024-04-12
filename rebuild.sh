@@ -8,4 +8,4 @@ docker rm openweathermap
 docker build -t openweathermap .
 
 # Run the new container
-docker run -d -it --name openweathermap openweathermap
+docker run -d -it --restart unless-stopped --name openweathermap openweathermap

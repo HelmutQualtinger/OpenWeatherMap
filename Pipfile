@@ -5,10 +5,12 @@ name = "pypi"
 
 [packages]
 mysql-connector = "*"
-schedule = "*"
-requests = "*"
+schedule = "==1.2.1"
+requests = "==2.25.1"
+mysql-connector-python = "==8.3.0"
 
 [dev-packages]
+pandas = "*"
 
 [requires]
 python_version = "3.11"
