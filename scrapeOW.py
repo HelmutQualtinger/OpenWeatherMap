@@ -166,12 +166,8 @@ def fetch_and_save_weather_data():
 fetch_and_save_weather_data()
 
 # Schedule the fetch_and_save_weather_data function to run every hour
-schedule.every().hour.at(":00").do(fetch_and_save_weather_data)
-schedule.every().hour.at(":10").do(fetch_and_save_weather_data)
-schedule.every().hour.at(":20").do(fetch_and_save_weather_data)
-schedule.every().hour.at(":30").do(fetch_and_save_weather_data)
-schedule.every().hour.at(":40").do(fetch_and_save_weather_data)
-schedule.every().hour.at(":50").do(fetch_and_save_weather_data)
+schedule.every().hour.at(":05").do(fetch_and_save_weather_data)
+schedule.every().hour.at(":35").do(fetch_and_save_weather_data)
 
 while True:
     schedule.run_pending()
