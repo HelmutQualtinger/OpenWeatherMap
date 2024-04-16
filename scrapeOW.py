@@ -9,10 +9,11 @@ import mysql.connector
 import schedule
 import datetime
 from credentials import API_KEY, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
-import schweiz
-import deutschland
-import italia
-import france
+from readLocationDB import fetch_location_data
+# import schweiz
+# import deutschland
+# import italia
+# import france
 
 
 # Extract the API key and database credentials from the JSON object
@@ -71,8 +72,7 @@ def fetch_and_save_weather_data():
 
     # Query the OpenWeatherMap API
     # 
-    for (city, canton, country) in deutschland.orte + \
-                            schweiz.orte + italia.citta_italiane + france.french_towns:
+    for (city, canton, country) in fetch_location_data():
         url = f"http://api.openweathermap.org/data/2.5/weather?q={city},{country}&lang=de&appid={API_KEY}"
         print (url)
         response = requests.get(url)
@@ -82,41 +82,41 @@ def fetch_and_save_weather_data():
         with open('response.json', 'w', encoding='utf-8') as file:
             json.dump(data, file)
         # Extract the required measurements from the API response
-        lon= data["coord"]["lon"]
-        lat= data["coord"]["lat"]
-        weather_main = data["weather"][0]["description"]
-        weather_desc = data["weather"][0]["main"]
-        temperature = data["main"]["temp"] -273.15
-        temperature_min = data["main"]["temp_min"] -273.15
-        temperature_max = data["main"]["temp_max"] -273.15
-        temperature_feels_like = data["main"]["feels_like"] -273.15
-        humidity = data["main"]["humidity"]
-        pressure = data["main"]["pressure"]
-        wind_speed = data["wind"]["speed"]
-        wind_direction = data["wind"]["deg"]
         try:
-            rain_down_1h = data["rain"]["1h"]
-        except KeyError:
-            rain_down_1h = 0
-        dt= data["dt"]
-        clouds = data["clouds"]["all"]
-        country = data["sys"]["country"]
-        sunrise = data["sys"]["sunrise"]
-        sunset = data["sys"]["sunset"]
-        
-        country = data["sys"]["country"]
-        city = data["name"][:25] # use city name called for instead
-        tz = data["timezone"]
+            lon= data["coord"]["lon"]
+            lat= data["coord"]["lat"]
+            weather_main = data["weather"][0]["description"]
+            weather_desc = data["weather"][0]["main"]
+            temperature = data["main"]["temp"] -273.15
+            temperature_min = data["main"]["temp_min"] -273.15
+            temperature_max = data["main"]["temp_max"] -273.15
+            temperature_feels_like = data["main"]["feels_like"] -273.15
+            humidity = data["main"]["humidity"]
+            pressure = data["main"]["pressure"]
+            wind_speed = data["wind"]["speed"]
+            wind_direction = data["wind"]["deg"]
+            try:
+                rain_down_1h = data["rain"]["1h"]
+            except KeyError:
+                rain_down_1h = 0
+            dt= data["dt"]
+            clouds = data["clouds"]["all"]
+            country = data["sys"]["country"]
+            sunrise = data["sys"]["sunrise"]
+            sunset = data["sys"]["sunset"]
+            country = data["sys"]["country"]
+            city = data["name"][:25] # use city name called for instead
+            tz = data["timezone"]
         # Convert unix timestamps to SQL timestamps
-        sunrise = datetime.datetime.fromtimestamp(sunrise).strftime('%Y-%m-%d %H:%M:%S')
-        sunset = datetime.datetime.fromtimestamp(sunset).strftime('%Y-%m-%d %H:%M:%S')
-        dt = datetime.datetime.fromtimestamp(dt).strftime('%Y-%m-%d %H:%M:%S')
+            sunrise = datetime.datetime.fromtimestamp(sunrise).strftime('%Y-%m-%d %H:%M:%S')
+            sunset = datetime.datetime.fromtimestamp(sunset).strftime('%Y-%m-%d %H:%M:%S')
+            dt = datetime.datetime.fromtimestamp(dt).strftime('%Y-%m-%d %H:%M:%S')
         # Connect to the MySQL database
         
         # Truncate weather_main to 25 characters
-        weather_main = weather_main[:25]
+            weather_main = weather_main[:25]
         # Insert the weather data into the database
-        insert_data_query = """
+            insert_data_query = """
             INSERT INTO weather_data (
                 city, 
                 temperature, 
@@ -148,14 +148,17 @@ def fetch_and_save_weather_data():
         #                 humidity, pressure, lon, lat, "--",weather_main,"--", 
         #                 weather_desc, wind_speed, wind_direction, rain_down_1h, clouds,
         #                 country, canton, dt, sunrise, sunset, tz)
-        if len(canton)>25:
-                canton = canton[:25]
-        cursor.execute(insert_data_query, 
+            if len(canton)>25:
+                    canton = canton[:25]
+            cursor.execute(insert_data_query, 
                     (city, temperature, temperature_min, temperature_max, temperature_feels_like,
                         humidity, pressure, lon, lat, weather_main, 
                         weather_desc, wind_speed, wind_direction, rain_down_1h, clouds,
                         country, canton, dt, sunrise, sunset, tz))
-        db.commit()
+            db.commit()
+        except KeyError:
+                pass
+            
         time.sleep(0.05)
 
         # Close the database connection
