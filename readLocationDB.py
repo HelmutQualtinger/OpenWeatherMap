@@ -35,3 +35,4 @@ def fetch_location_data():
 if __name__ == "__main__":
     for i,(city,canton,country) in enumerate(fetch_location_data()):
         print (f"Got {i} {city}, {canton}, {country} from location_table")
+        
