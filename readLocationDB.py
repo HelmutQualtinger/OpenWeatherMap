@@ -15,7 +15,7 @@ def fetch_location_data():
     cursor = db.cursor()
 
     # Execute the SQL query to fetch the data
-    query = "SELECT distinct city, canton, country FROM location_table"
+    query = "SELECT distinct city, canton, country FROM location_table order by country, canton, city;"
     cursor.execute(query)
 
     # Fetch all the rows from the result set
@@ -26,7 +26,7 @@ def fetch_location_data():
     # Print the data
     for row in results:
         city, canton, country = row
-        print(f"City: {city}, Canton: {canton}, Country: {country}")
+#        print(f"City: {city}, Canton: {canton}, Country: {country}")
         yield( city, canton, country)
 
     # Close the cursor and database connection

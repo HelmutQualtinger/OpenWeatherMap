@@ -98,3 +98,30 @@ citta_italiane.sort(key=lambda tupla: (tupla[1],tupla[0]))
 # Stampa tutte le città italiane con le rispettive regioni
 for indice, (citta, regione,_) in enumerate(citta_italiane):
     print(f"{indice}. {citta} - {regione}")
+    
+
+import mysql.connector
+from credentials import *
+
+def insert_into_location_table(sorted_cities):
+
+    # Connect to the database
+    conn = mysql.connector.connect(
+        host=DB_HOST,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME
+    )
+    cursor = conn.cursor()
+    # Create the location_table if it doesn't exist
+
+    # Insert the sorted city list into the location_table
+    for city in sorted_cities:
+        cursor.execute("INSERT INTO location_table (city, canton, country) VALUES (%s, %s, %s)", city)
+        conn.commit()
+
+    # Commit the changes and close the connection
+ 
+    conn.close()
+    
+insert_into_location_table(citta_italiane)

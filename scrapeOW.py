@@ -37,7 +37,7 @@ def fetch_and_save_weather_data():
 
         # Create the weather_data table if it does not exist
     create_table_query = """
-            CREATE TABLE IF NOT EXISTS weather_data (
+            CREATE TABLE IF NOT EXISTS weather_data_new (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 city VARCHAR(40),
                 lon FLOAT,
@@ -72,15 +72,19 @@ def fetch_and_save_weather_data():
 
     # Query the OpenWeatherMap API
     # 
-    for (city, canton, country) in fetch_location_data():
+    for i,(city, canton, country) in enumerate(fetch_location_data()):
         url = f"http://api.openweathermap.org/data/2.5/weather?q={city},{country}&lang=de&appid={API_KEY}"
-        print (url)
-        response = requests.get(url)
+#        print (url)
+        response = requests.get(url,timeout=10)
         data = response.json()
+        try:
+            print(i,data["name"], data["sys"]["country"])
+        except KeyError:    
+            print(i, city, country, " not found")
    #     print (response)
         # Dump the API response to a JSON file
-        with open('response.json', 'w', encoding='utf-8') as file:
-            json.dump(data, file)
+#        with open('response.json', 'w', encoding='utf-8') as file:
+#           json.dump(data, file)
         # Extract the required measurements from the API response
         try:
             lon= data["coord"]["lon"]
@@ -117,7 +121,7 @@ def fetch_and_save_weather_data():
             weather_main = weather_main[:25]
         # Insert the weather data into the database
             insert_data_query = """
-            INSERT INTO weather_data (
+            INSERT INTO weather_data_new (
                 city, 
                 temperature, 
                 temperature_min, 
@@ -168,6 +172,7 @@ def fetch_and_save_weather_data():
 
 fetch_and_save_weather_data()
 
+exit()
 # Schedule the fetch_and_save_weather_data function to run every hour
 schedule.every().hour.at(":05").do(fetch_and_save_weather_data)
 schedule.every().hour.at(":35").do(fetch_and_save_weather_data)

@@ -86,3 +86,29 @@ orte = [
 orte.sort(key=lambda x: (x[1],x[0]))
 
 print(orte)
+
+import mysql.connector
+from credentials import *
+
+def insert_into_location_table(sorted_cities):
+
+    # Connect to the database
+    conn = mysql.connector.connect(
+        host=DB_HOST,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME
+    )
+    cursor = conn.cursor()
+    # Create the location_table if it doesn't exist
+
+    # Insert the sorted city list into the location_table
+    for city in sorted_cities:
+        cursor.execute("INSERT INTO location_table (city, canton, country) VALUES (%s, %s, %s)", city)
+        conn.commit()
+
+    # Commit the changes and close the connection
+ 
+    conn.close()
+    
+insert_into_location_table(orte)
